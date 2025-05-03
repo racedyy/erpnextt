@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "creation": "2025-05-02 14:20:56.646395",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-05-02 14:20:56.646395",
+ "modified_by": "Administrator",
+ "module": "importcsv",
+ "name": "import",
+ "owner": "Administrator",
+ "page_name": "import",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Importation donnees CSV"
+}
