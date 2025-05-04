@@ -35,6 +35,10 @@
   "distributed_discount_amount",
   "col_break_price_list",
   "base_price_list_rate",
+  "margin_section",
+  "margin_type",
+  "margin_rate_or_amount",
+  "rate_with_margin",
   "sec_break1",
   "rate",
   "amount",
@@ -232,6 +236,28 @@
    "options": "Company:company:default_currency",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "margin_section",
+   "fieldtype": "Section Break",
+   "label": "Margin"
+  },
+  {
+   "fieldname": "margin_type",
+   "fieldtype": "Select",
+   "label": "Margin Type",
+   "options": "\nPercentage\nAmount"
+  },
+  {
+   "fieldname": "margin_rate_or_amount",
+   "fieldtype": "Float",
+   "label": "Margin Rate or Amount"
+  },
+  {
+   "fieldname": "rate_with_margin",
+   "fieldtype": "Currency",
+   "label": "Rate With Margin",
+   "options": "currency"
   },
   {
    "fieldname": "sec_break1",
