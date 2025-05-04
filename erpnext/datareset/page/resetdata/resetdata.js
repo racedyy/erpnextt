@@ -15,6 +15,8 @@ frappe.pages['resetdata'].on_page_load = function(wrapper) {
 		"Sales Order",
 		"Purchase Order",
 		"Quotation",
+		"Supplier Quotation",
+		"Material Request",
 		"Delivery Note",
 		"Stock Entry",
 		"Project",
@@ -26,14 +28,35 @@ frappe.pages['resetdata'].on_page_load = function(wrapper) {
 		"Timesheet"
 	];
 
+	// Liste des tables de stock
+	const STOCK_TABLES = [
+		"Stock Ledger Entry",
+		"Stock Value History",
+		"Bin"
+	];
+
 	// Créer la section pour afficher les tables
 	let $content = $(`
 		<div class="reset-data-page">
 			<div class="stats-section">
-				<div class="stats-box">
-					<div class="stat">
-						<div class="stat-label">Tables à réinitialiser</div>
-						<div class="stat-value">${DOCTYPES_TO_RESET.length}</div>
+				<div class="stats-grid">
+					<div class="stats-box">
+						<div class="stat">
+							<div class="stat-label">Tables métier</div>
+							<div class="stat-value">${DOCTYPES_TO_RESET.length}</div>
+						</div>
+					</div>
+					<div class="stats-box">
+						<div class="stat">
+							<div class="stat-label">Tables de stock</div>
+							<div class="stat-value">${STOCK_TABLES.length}</div>
+						</div>
+					</div>
+					<div class="stats-box total">
+						<div class="stat">
+							<div class="stat-label">Total tables</div>
+							<div class="stat-value">${DOCTYPES_TO_RESET.length + STOCK_TABLES.length}</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -41,6 +64,11 @@ frappe.pages['resetdata'].on_page_load = function(wrapper) {
 			<div class="tables-section">
 				<div class="section-title">Tables métier à réinitialiser</div>
 				<div class="table-list"></div>
+			</div>
+
+			<div class="stock-section">
+				<div class="section-title">Tables de stock à réinitialiser</div>
+				<div class="stock-table-list"></div>
 			</div>
 
 			<div class="log-section hide">
@@ -82,26 +110,41 @@ frappe.pages['resetdata'].on_page_load = function(wrapper) {
 		}
 	};
 
+	// Fonction pour créer un élément de table
+	const createTableItem = (doctype, exists, count, type = '') => {
+		const status = exists ? '' : 'warning';
+		const statusMessage = exists ? '' : '⚠️ Table non installée';
+		const badge = type ? `<span class="badge badge-${type}">${type}</span>` : '';
+		
+		return `
+			<div class="table-item ${status}" data-doctype="${doctype}">
+				<div class="table-info">
+					<span class="table-name">${doctype}</span>
+					<span class="record-count">${exists ? `${count} enregistrements` : 'Non installée'}</span>
+					${badge}
+				</div>
+				<div class="status-indicator">${statusMessage}</div>
+			</div>
+		`;
+	};
+
 	// Fonction pour mettre à jour l'affichage des tables
 	const updateTableList = async () => {
+		// Mettre à jour les tables métier
 		const tableItems = await Promise.all(DOCTYPES_TO_RESET.map(async (doctype) => {
 			const exists = await checkTableExists(doctype);
 			const count = exists ? await getTableCount(doctype) : 0;
-			const status = exists ? '' : 'warning';
-			const statusMessage = exists ? '' : '⚠️ Table non installée';
-			
-			return `
-				<div class="table-item ${status}" data-doctype="${doctype}">
-					<div class="table-info">
-						<span class="table-name">${doctype}</span>
-						<span class="record-count">${exists ? `${count} enregistrements` : 'Non installée'}</span>
-					</div>
-					<div class="status-indicator">${statusMessage}</div>
-				</div>
-			`;
+			return createTableItem(doctype, exists, count);
 		}));
-
 		$content.find('.table-list').html(tableItems.join(''));
+
+		// Mettre à jour les tables de stock
+		const stockItems = await Promise.all(STOCK_TABLES.map(async (doctype) => {
+			const exists = await checkTableExists(doctype);
+			const count = exists ? await getTableCount(doctype) : 0;
+			return createTableItem(doctype, exists, count, 'stock');
+		}));
+		$content.find('.stock-table-list').html(stockItems.join(''));
 	};
 
 	// Fonction pour mettre à jour le statut d'une table
@@ -177,11 +220,19 @@ frappe.pages['resetdata'].on_page_load = function(wrapper) {
 		.stats-section {
 			margin-bottom: 30px;
 		}
+		.stats-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 15px;
+		}
 		.stats-box {
 			background: var(--bg-light-gray);
 			padding: 15px;
 			border-radius: 8px;
 			text-align: center;
+		}
+		.stats-box.total {
+			background: var(--blue-50);
 		}
 		.stat-label {
 			font-size: 0.9em;
@@ -192,45 +243,34 @@ frappe.pages['resetdata'].on_page_load = function(wrapper) {
 			font-weight: bold;
 			color: var(--text-color);
 		}
-		.table-list {
+		.table-list, .stock-table-list {
 			display: grid;
 			grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 			gap: 10px;
+			margin-bottom: 30px;
 		}
 		.table-item {
 			background: white;
-			padding: 15px;
 			border: 1px solid var(--border-color);
 			border-radius: 6px;
-		}
-		.table-item.warning {
-			border-left: 4px solid var(--yellow-500);
-			background: var(--yellow-50);
-		}
-		.table-item.error {
-			border-left: 4px solid var(--red-500);
-			background: var(--red-50);
-		}
-		.table-info {
+			padding: 12px;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			margin-bottom: 10px;
+		}
+		.table-item.warning {
+			background: var(--yellow-50);
 		}
 		.table-name {
 			font-weight: bold;
+			color: var(--text-color);
 		}
 		.record-count {
-			color: var(--text-muted);
 			font-size: 0.9em;
+			color: var(--text-muted);
+			margin-left: 10px;
 		}
 		.status-indicator {
-			font-size: 0.9em;
-		}
-		.status-icon {
-			margin-right: 5px;
-		}
-		.status-message {
 			color: var(--text-muted);
 		}
 		.log-section {
@@ -238,34 +278,32 @@ frappe.pages['resetdata'].on_page_load = function(wrapper) {
 			padding-top: 20px;
 			border-top: 1px solid var(--border-color);
 		}
-		.log-section.hide {
-			display: none;
-		}
-		.log-content {
-			background: var(--bg-light-gray);
-			padding: 15px;
-			border-radius: 8px;
-			max-height: 300px;
-			overflow-y: auto;
-		}
 		.log-entry {
-			padding: 5px 0;
-			border-bottom: 1px solid var(--border-color);
-		}
-		.log-entry:last-child {
-			border-bottom: none;
+			padding: 8px;
+			margin-bottom: 5px;
+			border-radius: 4px;
 		}
 		.log-entry.success {
-			color: var(--green-600);
+			background: var(--green-50);
 		}
 		.log-entry.warning {
-			color: var(--yellow-600);
+			background: var(--yellow-50);
 		}
 		.log-entry.error {
-			color: var(--red-600);
+			background: var(--red-50);
+		}
+		.badge {
+			padding: 2px 8px;
+			border-radius: 12px;
+			font-size: 0.8em;
+			margin-left: 8px;
+		}
+		.badge-stock {
+			background: var(--blue-50);
+			color: var(--blue-600);
 		}
 	`);
 
-	// Charger la liste des tables initiale
+	// Initialiser l'affichage
 	updateTableList();
-}
+};

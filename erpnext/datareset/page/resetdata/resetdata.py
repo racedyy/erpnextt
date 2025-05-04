@@ -32,6 +32,8 @@ def reset_all_data():
         "Sales Order",
         "Purchase Order",
         "Quotation",
+        "Supplier Quotation",
+        "Material Request",  # Ajout des demandes de matériel
         "Delivery Note",
         "Stock Entry",
         "Project",
@@ -72,6 +74,61 @@ def reset_all_data():
                 "message": f"⚠️ Erreur en vidant {doctype}: {str(e)}",
                 "error": str(e)
             })
+
+    # Réinitialiser les valeurs de stock
+    try:
+        # Mettre à jour les valeurs de stock à 0 pour tous les articles
+        frappe.db.sql("""
+            UPDATE `tabItem`
+            SET opening_stock = 0,
+                standard_rate = 0,
+                valuation_rate = 0
+            WHERE docstatus < 2
+        """)
+        frappe.db.commit()
+        
+        # Supprimer les entrées de stock
+        if check_table_exists("Stock Ledger Entry"):
+            frappe.db.sql("DELETE FROM `tabStock Ledger Entry`")
+            frappe.db.commit()
+            
+        # Supprimer l'historique des valorisations
+        if check_table_exists("Stock Value History"):
+            frappe.db.sql("DELETE FROM `tabStock Value History`")
+            frappe.db.commit()
+
+        # Réinitialiser les bins (stock des entrepôts)
+        if check_table_exists("Bin"):
+            frappe.db.sql("""
+                UPDATE `tabBin`
+                SET actual_qty = 0,
+                    ordered_qty = 0,
+                    reserved_qty = 0,
+                    indented_qty = 0,
+                    planned_qty = 0,
+                    projected_qty = 0,
+                    reserved_qty_for_production = 0,
+                    reserved_qty_for_sub_contract = 0,
+                    reserved_qty_for_production_plan = 0,
+                    stock_value = 0,
+                    valuation_rate = 0
+            """)
+            frappe.db.commit()
+            
+        results.append({
+            "doctype": "Stock Values",
+            "status": "success",
+            "message": "✅ Valeurs de stock réinitialisées",
+            "count_before": "N/A",
+            "count_after": 0
+        })
+    except Exception as e:
+        results.append({
+            "doctype": "Stock Values",
+            "status": "error",
+            "message": f"⚠️ Erreur en réinitialisant les valeurs de stock: {str(e)}",
+            "error": str(e)
+        })
 
     return {
         "status": "success",
